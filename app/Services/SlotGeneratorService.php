@@ -111,8 +111,8 @@ class SlotGeneratorService
             ->get();
         
         foreach ($breaks as $break) {
-            $breakStart = Carbon::parse($break->start_time);
-            $breakEnd = Carbon::parse($break->end_time);
+            $breakStart = Carbon::parse($start->toDateString() . ' ' . $break->start_time);
+            $breakEnd = Carbon::parse($start->toDateString() . ' ' . $break->end_time);
             
             // Check if slot overlaps with break
             if ($start->lt($breakEnd) && $end->gt($breakStart)) {

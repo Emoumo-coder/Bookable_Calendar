@@ -78,7 +78,7 @@ class BookingValidationService
         
         // Check if enough spots available
         $bookedCount = Booking::where('service_id', $service->id)
-            ->where('booking_date', $bookingDate->toDateString())
+            ->whereDate('booking_date', $bookingDate->toDateString())
             ->where('start_time', $data['start_time'])
             ->where('end_time', $data['end_time'])
             ->withCount('clients')
