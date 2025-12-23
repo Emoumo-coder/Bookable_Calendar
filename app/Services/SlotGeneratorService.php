@@ -44,6 +44,12 @@ class SlotGeneratorService
         if ($isPlannedOff) {
             return [];
         }
+
+        $bookings = Booking::where('service_id', $service->id)
+            ->whereDate('booking_date', $bookingDate->toDateString())
+            ->withCount('clients')
+            ->get()
+            ->groupBy(fn ($b) => $b->start_time . '-' . $b->end_time);
         
         // Generate slots
         $slots = [];
@@ -57,7 +63,10 @@ class SlotGeneratorService
             $slotEnd = $current->copy();
             
             // Skip if slot falls in a break
-            if ($this->isInBreak($service, $dayOfWeek, $slotStart, $slotEnd)) {
+            $breakEnd = $this->isInBreak($service, $dayOfWeek, $slotStart, $slotEnd);
+            if ($breakEnd) {
+                // jump directly to end of break
+                $current = $breakEnd->copy();
                 continue;
             }
             
@@ -67,14 +76,9 @@ class SlotGeneratorService
             }
             
             // Get existing bookings for this slot
-            $existingBookings = Booking::where('service_id', $service->id)
-                ->where('booking_date', $bookingDate->toDateString())
-                ->where('start_time', $slotStart->toTimeString())
-                ->where('end_time', $slotEnd->toTimeString())
-                ->withCount('clients')
-                ->get();
-            
-            $bookedClients = $existingBookings->sum('clients_count');
+            $key = $slotStart->toTimeString() . '-' . $slotEnd->toTimeString();
+
+            $bookedClients = $bookings->get($key)?->sum('clients_count') ?? 0;
             $availableSpots = $service->max_clients_per_slot - $bookedClients;
             
             if ($availableSpots > 0) {
@@ -99,9 +103,9 @@ class SlotGeneratorService
      * @param int $dayOfWeek
      * @param Carbon $start
      * @param Carbon $end
-     * @return bool
+     * @return Carbon|null Returns the end time of the break if in break, null otherwise
      */
-    private function isInBreak(Service $service, int $dayOfWeek, Carbon $start, Carbon $end): bool
+    private function isInBreak(Service $service, int $dayOfWeek, Carbon $start, Carbon $end): ?Carbon
     {
         $breaks = $service->serviceBreaks()
             ->where(function($query) use ($dayOfWeek) {
@@ -116,11 +120,11 @@ class SlotGeneratorService
             
             // Check if slot overlaps with break
             if ($start->lt($breakEnd) && $end->gt($breakStart)) {
-                return true;
+                return $breakEnd; 
             }
         }
         
-        return false;
+        return null;
     }
     
     /**
