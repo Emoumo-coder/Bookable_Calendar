@@ -23,8 +23,8 @@ class DatabaseSeeder extends Seeder
         $menHaircut = Service::create([
             'name' => 'Men Haircut',
             'slug' => 'men-haircut',
-            'slot_duration_minutes' => 10,
-            'cleanup_break_minutes' => 5,
+            'slot_duration_minutes' => 30,
+            'cleanup_break_minutes' => 7,
             'max_clients_per_slot' => 3,
             'max_days_in_future' => 7,
         ]);
@@ -37,7 +37,7 @@ class DatabaseSeeder extends Seeder
             ['day' => 4, 'start' => '08:00', 'end' => '20:00'], // Thursday
             ['day' => 5, 'start' => '08:00', 'end' => '20:00'], // Friday
             ['day' => 6, 'start' => '10:00', 'end' => '22:00'], // Saturday
-            // Sunday off (no schedule)
+            ['day' => 7, 'start' => '10:00', 'end' => '22:00'], // Sunday
         ];
         
         foreach ($menSchedule as $schedule) {
@@ -64,6 +64,14 @@ class DatabaseSeeder extends Seeder
             'day_of_week' => null,
             'start_time' => '15:00',
             'end_time' => '16:00',
+        ]);
+
+        ServiceBreak::create([
+            'service_id' => $menHaircut->id,
+            'name' => 'Cleaning Break',
+            'day_of_week' => 3,
+            'start_time' => '14:20',
+            'end_time' => '15:15',
         ]);
         
         // Planned off (public holiday) - 3rd day from now
